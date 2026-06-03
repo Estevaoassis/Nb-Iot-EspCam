@@ -1,7 +1,7 @@
 from pathlib import Path
 
 # Configurações da comunicação Serial / NB-IoT
-SERIAL_PORT = "COM3"  # No Linux/Mac seria '/dev/ttyUSB0'
+SERIAL_PORT = "COM5"  # No Linux/Mac seria '/dev/ttyUSB0'
 BAUDRATE = 115200
 TIMEOUT = 5000.0
 
