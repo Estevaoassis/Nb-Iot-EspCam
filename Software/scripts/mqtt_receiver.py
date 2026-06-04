@@ -12,8 +12,8 @@ TOPIC = "nb-iot-espcam/chunck/+"
 
 # Estado global para armazenamento dos chunks
 chunks = {}
-last_received_time = 0
-TIMEOUT_ASSEMBLE = 10
+TOTAL_CHUNKS = 74          # índices esperados: 0 até 74
+EXPECTED_INDICES = set(range(TOTAL_CHUNKS))
 
 def is_hex(s):
     """Verifica se a string/bytes consiste apenas em caracteres hexadecimais válidos."""
@@ -119,7 +119,7 @@ def on_connect(client, userdata, flags, rc, properties=None):
         print(f"[ERRO] Falha na conexão. Código de retorno: {rc}")
 
 def on_message(client, userdata, msg):
-    global chunks, last_received_time
+    global chunks
     
     # Extrai o índice do chunk a partir do tópico (ex: nb-iot-espcam/chunck/3 -> 3)
     try:
@@ -131,18 +131,22 @@ def on_message(client, userdata, msg):
         
     payload = msg.payload
     chunks[chunk_idx] = payload
-    last_received_time = time.time()
     
-    print(f"[MQTT] Recebido Chunk #{chunk_idx:02d} | Tamanho: {len(payload)} bytes")
+    recebidos = len(chunks)
+    print(f"[MQTT] Recebido Chunk #{chunk_idx:02d} | Tamanho: {len(payload)} bytes | Progresso: {recebidos}/{TOTAL_CHUNKS}")
     
-    # Verificação inteligente de fim de transmissão:
-    # Se o tamanho do payload for menor que 512 bytes (tamanho máximo do chunk configurado no firmware)
-    # E temos todos os chunks desde o índice 0 até este chunk_idx, então a imagem está completa!
+    # --- Condição principal: todos os 75 chunks (0-74) presentes ---
+    if EXPECTED_INDICES.issubset(chunks.keys()):
+        print(f"[MQTT] Todos os {TOTAL_CHUNKS} chunks recebidos! Montando imagem...")
+        tentar_montar_imagem()
+        return
+
+    # --- Fallback: último chunk menor que 512 bytes indica fim da transmissão ---
     if len(payload) < 512 and 0 in chunks:
-        indices = set(chunks.keys())
-        esperados = set(range(0, chunk_idx + 1))
-        if esperados.issubset(indices):
-            print(f"[MQTT] Último chunk ({chunk_idx}) detectado e todos os chunks anteriores estão presentes!")
+        indices_recebidos = set(chunks.keys())
+        esperados_ate_aqui = set(range(0, chunk_idx + 1))
+        if esperados_ate_aqui.issubset(indices_recebidos):
+            print(f"[MQTT] Último chunk ({chunk_idx}) detectado com tamanho reduzido — montando imagem...")
             tentar_montar_imagem()
 
 def main():
@@ -162,16 +166,12 @@ def main():
         
     client.loop_start()
     
-    print(f"\nAguardando dados do broker. Timeout de compilação: {TIMEOUT_ASSEMBLE}s sem novos chunks.")
+    print(f"\nAguardando {TOTAL_CHUNKS} chunks (índices 0–{TOTAL_CHUNKS - 1}) do broker.")
     print("Pressione Ctrl+C para encerrar.\n")
     
     try:
         while True:
-            time.sleep(0.5)
-            # Verifica se recebemos dados e o tempo de silêncio expirou
-            if last_received_time > 0 and (time.time() - last_received_time) > TIMEOUT_ASSEMBLE:
-                print("\n[Compilador] Timeout de silêncio atingido.")
-                tentar_montar_imagem()
+            time.sleep(1)
     except KeyboardInterrupt:
         print("\nStopping...")
     finally:
