@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 # Configurações da comunicação Serial / NB-IoT
@@ -14,3 +15,8 @@ OUTPUT_IMAGE_DIR = BASE_DIR / "output"
 
 # Garante que a pasta exista (se não existir, o Python cria ela na hora)
 OUTPUT_IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+
+# Configurações do MongoDB
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
+MONGO_DB = os.getenv("MONGO_DB", "espcam_db")
+MONGO_COLLECTION = os.getenv("MONGO_COLLECTION", "images")

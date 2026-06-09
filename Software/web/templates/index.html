@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP-CAM Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="glass-panel">
+            <div class="header-content">
+                <div class="logo">📷</div>
+                <div class="titles">
+                    <h1>ESP-CAM Dashboard</h1>
+                    <p>Live IoT Image Feed via NB-IoT & MQTT</p>
+                </div>
+            </div>
+            <div class="stats">
+                <span class="badge">{{ imagens|length }} Imagens Recebidas</span>
+            </div>
+        </header>
+
+        <main class="gallery">
+            {% if imagens %}
+                {% for img in imagens %}
+                <div class="card glass-panel">
+                    <div class="img-wrapper">
+                        <img src="data:image/jpeg;base64,{{ img.base64 }}" alt="ESP32-CAM Snapshot">
+                        <div class="overlay">
+                            <span class="format-badge">{{ img.formato }}</span>
+                        </div>
+                    </div>
+                    <div class="card-info">
+                        <h2>{{ img.timestamp }}</h2>
+                        <p>Size: {{ img.tamanho }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state glass-panel">
+                    <h2>Nenhuma imagem encontrada.</h2>
+                    <p>Aguardando envios da ESP32-CAM via MQTT...</p>
+                </div>
+            {% endif %}
+        </main>
+        
+        <footer>
+            <p>Powered by Flask, MongoDB & Docker</p>
+        </footer>
+    </div>
+</body>
+</html>

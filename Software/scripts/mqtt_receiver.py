@@ -4,6 +4,8 @@ from pathlib import Path
 from PIL import Image
 import paho.mqtt.client as mqtt
 from config import settings
+from core import db_manager
+
 
 # Configurações do MQTT
 BROKER = "131.255.82.115"
@@ -34,6 +36,11 @@ def processar_imagem(bytes_totais):
     
     # Verifica se os dados começam com o cabeçalho JPEG standard (\xff\xd8)
     eh_jpeg = bytes_totais.startswith(b'\xff\xd8')
+    formato_img = "JPEG" if eh_jpeg else "Grayscale/Raw"
+    
+    # Salvar no MongoDB
+    print(f"[Banco] Enviando imagem ({len(bytes_totais)} bytes) para o MongoDB...")
+    db_manager.salvar_imagem_mongodb(bytes_totais, formato=formato_img)
     
     if not eh_jpeg and len(bytes_totais) <= 19200:
         try:

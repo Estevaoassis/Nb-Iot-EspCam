@@ -2,3 +2,5 @@ numpy
 pyserial
 pillow
 paho-mqtt
+pymongo
+Flask

@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: espcam_receiver
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/
+      - MONGO_DB=espcam_db
+      - MONGO_COLLECTION=images
+    volumes:
+      # Monta a pasta de output local para dentro do container
+      # Isso permite que você continue vendo as imagens localmente
+      - ./output:/app/output
+
+  mongodb:
+    image: mongo:latest
+    container_name: espcam_mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+  dashboard:
+    build: .
+    container_name: espcam_dashboard
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MONGO_URI=mongodb://mongodb:27017/
+      - MONGO_DB=espcam_db
+      - MONGO_COLLECTION=images
+    ports:
+      - "5000:5000"
+    command: ["python", "-m", "scripts.web_dashboard"]
+
+volumes:
+  mongodb_data:
