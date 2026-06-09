@@ -1,68 +1,82 @@
-# Receptor de Imagens MQTT ESP32-CAM (NB-IoT)
+# ESP-CAM IoT Image Receiver & Dashboard
 
-Este repositório contém o software responsável por receber, processar e montar imagens transmitidas por um dispositivo ESP32-CAM através da rede NB-IoT (utilizando o protocolo MQTT) ou via comunicação serial.
+Este repositório contém o software completo (Backend, Banco de Dados e Frontend) responsável por receber, processar, armazenar e exibir imagens transmitidas por um dispositivo ESP32-CAM através de redes IoT (NB-IoT/MQTT ou Serial).
 
-O sistema recebe a imagem em fragmentos (chunks) e se encarrega de reconstruí-la em formato `.jpg`, salvando o resultado no diretório de saída.
+## O que o sistema faz?
+1. **MQTT Receiver:** Fica escutando um Broker MQTT por fragmentos de imagem (*chunks*) enviados pela placa.
+2. **Reconstrução:** Ao receber todos os *chunks*, ele monta a imagem (seja formato JPEG padrão ou Grayscale/Raw).
+3. **Persistência Dupla:** Salva o arquivo de imagem fisicamente na pasta `output/` e armazena a versão codificada e seus metadados diretamente no banco de dados **MongoDB**.
+4. **Web Dashboard:** Disponibiliza uma página web sofisticada para visualização das imagens capturadas em tempo real.
+
+---
 
 ## Estrutura do Projeto
 
-- `config/`: Configurações globais do projeto (ex: porta serial, host MQTT, diretórios de saída).
-- `core/`: Módulos centrais para comunicação serial (`serial_comm.py`) e processamento de imagem (`image_processor.py`).
-- `scripts/`: Scripts principais para execução do sistema. Destaca-se o `mqtt_receiver.py` para recebimento das imagens via MQTT.
-- `output/`: Diretório padrão onde as imagens montadas e processadas são armazenadas.
-- `requirements.txt`: Lista das dependências e bibliotecas Python necessárias para rodar o software.
+- `config/`: Configurações globais do projeto (variáveis de banco, porta serial, host MQTT).
+- `core/`: 
+  - `db_manager.py`: Comunicação com o MongoDB (inserção e consulta).
+  - `image_processor.py` / `serial_comm.py`: Processamento e comunicação.
+- `scripts/`: 
+  - `mqtt_receiver.py`: Serviço em segundo plano que recebe as fotos pelo MQTT.
+  - `web_dashboard.py`: Servidor Web em Flask para a interface visual.
+- `web/`: Código-fonte do Frontend (HTML5 / CSS3 Moderno com *Glassmorphism*).
+- `output/`: Diretório onde as imagens brutas são espelhadas localmente.
+- `docker-compose.yml` e `Dockerfile`: Arquivos para subir e orquestrar a infraestrutura toda com o Docker.
 
-## Pré-requisitos
+---
 
-- Python 3.8 ou superior instalado.
-- Acesso à internet para instalação dos pacotes e comunicação com o broker MQTT.
+## Como Rodar (Usando Docker - Recomendado)
 
-## Como Configurar e Construir (Build)
+A forma mais fácil e recomendada de rodar todo esse sistema de uma vez (banco de dados, receptor e dashboard) é utilizando o **Docker Compose**.
 
-Recomenda-se fortemente a utilização de um ambiente virtual (Virtual Environment - `venv`) para instalar as dependências do projeto, isolando-as do resto do sistema operacional.
+### Pré-requisitos
+- [Docker Desktop](https://www.docker.com/products/docker-desktop) instalado e rodando.
 
-Siga os passos abaixo para preparar o ambiente:
+### Iniciando a Infraestrutura
 
-### 1. Criar o Ambiente Virtual
+1. Abra o terminal na raiz desta pasta (`Software/`).
+2. Execute o comando para construir as imagens e subir os três containers em segundo plano:
+   ```bash
+   docker-compose up --build -d
+   ```
 
-Abra o terminal na pasta raiz do software (`Software/`) e execute o seguinte comando:
+3. **Acompanhar os logs:**
+   Se quiser ver as conexões MQTT sendo feitas e os chunks chegando em tempo real, use:
+   ```bash
+   docker-compose logs -f app
+   ```
 
-```bash
-python -m venv .venv
-```
+4. **Acessar o Web Dashboard:**
+   Abra seu navegador e acesse: 👉 **http://localhost:5000**
 
-### 2. Ativar o Ambiente Virtual
+---
 
-Ative o ambiente criado de acordo com o seu sistema operacional:
+## Como Rodar (Manual / Sem Docker)
 
-**No Windows:**
-```cmd
-.venv\Scripts\activate
-```
+Caso prefira rodar apenas scripts locais usando um ambiente virtual (`venv`), siga os passos:
 
-**No Linux / macOS:**
-```bash
-source .venv/bin/activate
-```
+1. **Crie e ative o ambiente virtual:**
+   ```bash
+   python -m venv .venv
+   
+   # No Windows:
+   .venv\Scripts\activate
+   # No Linux/Mac:
+   source .venv/bin/activate
+   ```
 
-*(Quando ativado, você verá `(.venv)` no início da linha de comando do seu terminal.)*
+2. **Instale as dependências:**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-### 3. Instalar as Dependências
+3. **Inicie o Receptor MQTT:**
+   *(Nota: O MongoDB precisa estar rodando localmente na porta 27017, caso contrário a imagem será salva apenas na pasta `output/`)*
+   ```bash
+   python -m scripts.mqtt_receiver
+   ```
 
-Com o ambiente virtual ativado, instale os pacotes listados no arquivo `requirements.txt`:
-
-```bash
-pip install -r requirements.txt
-```
-
-Isso instalará automaticamente bibliotecas essenciais como `numpy`, `pyserial`, `pillow` (para processamento de imagem) e `paho-mqtt` (para comunicação MQTT).
-
-## Como Usar
-
-Para iniciar o receptor MQTT e começar a escutar as imagens enviadas pelo ESP32-CAM, certifique-se de que o ambiente virtual está ativado e execute:
-
-```bash
-python -m scripts.mqtt_receiver
-```
-
-O script irá conectar-se ao Broker MQTT configurado, inscrever-se nos tópicos de chunks e montar automaticamente as fotos recebidas no diretório `output/`. Para demais ajustes como o endereço IP do Broker ou a Porta Serial, você pode editar os arquivos dentro de `config/` e os respectivos scripts.
+4. **Inicie o Servidor do Web Dashboard:** (Abra em outro terminal com o `.venv` ativado)
+   ```bash
+   python -m scripts.web_dashboard
+   ```
