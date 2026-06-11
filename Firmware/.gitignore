@@ -1,0 +1,13 @@
+Debug/COM.txt
+Build/
+.vscode/BROWSE.VC.DB-shm
+.vscode/BROWSE.VC.DB
+.vscode/BROWSE.VC.DB-wal
+.vscode/dryrun.log
+.vscode/targets.log
+.vscode/logging_output.log
+Debug/Scripts/_pycache_/
+Debug/logging_output.log
+Debug/htnb32l.ini
+Debug/cfg.digest
+.vscode/configurationCache.log
